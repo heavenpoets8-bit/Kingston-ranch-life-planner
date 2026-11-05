@@ -79,6 +79,11 @@ footer{text-align:center;color:var(--muted);padding:22px;font-size:12px}
 <div class="card">
 <h3>⭐ Dagelijkse taken</h3>
 <div id="dailyList"></div>
+  <div class="row" style="margin-top:10px">
+<input id="dailyTaskName" placeholder="Nieuwe dagelijkse taak">
+<button class="btn" id="dailyTaskAdd">+ Taak</button>
+</div>
+<p class="muted">Je kunt taken toevoegen, aanpassen of verwijderen.</p>
 </div>
 <div class="card">
 <h3>⏰ Afspraken vandaag</h3>
@@ -152,13 +157,14 @@ footer{text-align:center;color:var(--muted);padding:22px;font-size:12px}
 
 <script>
 const HORSES=["Rebellion","Binky","Babette","Kareltje","Kleinpaardje","Yumyum","Bambam","Dusty","Lane"];
-const DAILY=["Opstaan om 7:00 uur","Paarden buiten zetten","Stallen uitmesten","Paarden eten geven – ochtend","Zelf ontbijten","Water drinken (8 glazen)","Saloon onderhouden","Ranch onderhouden","Paarden eten geven – avond","Zelf avondeten","Douchen","Paarden controleren voor de nacht"];
+const DEFAULT_DAILY=["Opstaan om 7:00 uur","Paarden buiten zetten","Stallen uitmesten","Paarden eten geven – ochtend","Zelf ontbijten","Water drinken (8 glazen)","Saloon onderhouden","Ranch onderhouden","Paarden eten geven – avond","Zelf avondeten","Douchen","Paarden controleren voor de nacht"];
 const WEEKLY=["Voer- en voorraad controleren","Watervoorzieningen reinigen","Omheiningen en weides controleren","Zadelkamer opruimen","Poetsmateriaal schoonmaken","Saloon grondig poetsen","Ranchterrein opruimen","Paardenmateriaal controleren"];
 const CARE=["Buiten zetten","Voeren","Water controleren","Poetsen","Hoeven controleren","Beweging / training","Avondcontrole"];
 const $=id=>document.getElementById(id);
 function read(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
 function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
-let habits=read("kr_habits",read("habits",["Opstaan om 7 uur","Paarden buiten zetten","Stallen uitmesten","Twee keer per dag eten","Douchen","8 glazen water drinken","Saloon onderhouden","Ranch onderhouden"]));
+let dailyTasks=read("kr_daily_tasks",DEFAULT_DAILY);
+  let habits=read("kr_habits",read("habits",["Opstaan om 7 uur","Paarden buiten zetten","Stallen uitmesten","Twee keer per dag eten","Douchen","8 glazen water drinken","Saloon onderhouden","Ranch onderhouden"]));
 let dailyDone=read("kr_daily",read("checks",{}));
 let habitDone=read("kr_habitdone",{});
 let weeklyDone=read("kr_weekly",{});
@@ -183,11 +189,11 @@ function listTasks(items,store,kind){return items.map((n,i)=>'<div class="task">
 function render(){
 if(water.date!==today())water={date:today(),count:0};
 $("today").textContent=new Date().toLocaleDateString("nl-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-$("dailyList").innerHTML=listTasks(DAILY,dailyDone,"daily");
+$("dailyList").innerHTML=dailyTasks.map((n,i)=>'<div class="task"><input type="checkbox" data-kind="daily" data-index="'+i+'" '+(checked(dailyDone,n)?"checked":"")+'><label>'+esc(n)+'</label><span class="task-actions"><button type="button" data-edit-daily="'+i+'">✎</button><button type="button" data-remove-daily="'+i+'">✕</button></span></div>').join("") || '<p class="muted">Nog geen dagelijkse taken. Voeg hierboven een taak toe.</p>';
 $("habitList").innerHTML=listTasks(habits,habitDone,"habit");
 $("weeklyList").innerHTML=WEEKLY.map((n,i)=>'<div class="task"><input type="checkbox" data-kind="weekly" data-index="'+i+'" '+(weeklyDone[weekKey()+"|"+n]?"checked":"")+'><label>'+esc(n)+'</label></div>').join("");
-let all=DAILY.length+habits.length;
-let done=DAILY.filter(n=>checked(dailyDone,n)).length+habits.filter(n=>checked(habitDone,n)).length;
+let all=dailyTasks.length+habits.length;
+let done=dailyTasks.filter(n=>checked(dailyDone,n)).length+habits.filter(n=>checked(habitDone,n)).length;
 let p=Math.round(done/all*100);
 $("doneCount").textContent=done+"/"+all;
 $("percent").textContent=p+"%";
@@ -201,7 +207,7 @@ renderHorses();renderEvents();renderUpcoming();renderReminders();renderWeekStats
 document.addEventListener("change",e=>{
 if(!e.target.matches('input[type=checkbox][data-kind]'))return;
 let kind=e.target.dataset.kind,i=Number(e.target.dataset.index),v=e.target.checked;
-if(kind==="daily"){let n=DAILY[i];dailyDone[today()+"|"+n]=v;dailyDone[today()+"_daily_"+n]=v;write("kr_daily",dailyDone);write("checks",dailyDone)}
+if(kind==="daily"){let n=dailyTasks[i];dailyDone[today()+"|"+n]=v;dailyDone[today()+"_daily_"+n]=v;write("kr_daily",dailyDone);write("checks",dailyDone)}
 if(kind==="habit"){let n=habits[i];habitDone[today()+"|"+n]=v;write("kr_habitdone",habitDone)}
 if(kind==="weekly"){let n=WEEKLY[i];weeklyDone[weekKey()+"|"+n]=v;write("kr_weekly",weeklyDone)}
 render();
@@ -214,7 +220,41 @@ document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x
 };
 $("waterAdd").onclick=()=>{water.count=Math.min(8,water.count+1);write("kr_water",water);localStorage.setItem("water",water.count);render()};
 $("waterReset").onclick=()=>{water.count=0;write("kr_water",water);localStorage.setItem("water",0);render()};
-$("habitAdd").onclick=()=>{
+$("dailyTaskAdd").onclick=()=>{
+let v=$("dailyTaskName").value.trim();
+if(!v)return;
+if(dailyTasks.some(x=>x.toLowerCase()===v.toLowerCase())){
+alert("Deze taak bestaat al.");
+return;
+}
+dailyTasks.push(v);
+write("kr_daily_tasks",dailyTasks);
+$("dailyTaskName").value="";
+render();
+};
+$("dailyList").onclick=e=>{
+let edit=e.target.closest("[data-edit-daily]");
+let remove=e.target.closest("[data-remove-daily]");
+if(edit){
+let i=Number(edit.dataset.editDaily);
+let v=prompt("Pas de dagelijkse taak aan:",dailyTasks[i]);
+if(v===null)return;
+v=v.trim();
+if(!v)return;
+dailyTasks[i]=v;
+write("kr_daily_tasks",dailyTasks);
+render();
+}
+if(remove){
+let i=Number(remove.dataset.removeDaily);
+if(confirm("Deze taak verwijderen?")){
+dailyTasks.splice(i,1);
+write("kr_daily_tasks",dailyTasks);
+render();
+}
+}
+};
+  $("habitAdd").onclick=()=>{
 let v=$("habitName").value.trim();if(!v)return;
 habits.push(v);write("kr_habits",habits);write("habits",habits);$("habitName").value="";render();
 };
