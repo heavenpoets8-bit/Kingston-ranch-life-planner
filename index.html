@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#38271e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Kingston Ranch Life Planner</title>
+<style>
+:root{--brown:#38271e;--dark:#241912;--cream:#f5ead7;--gold:#c49a50;--muted:#b9a58e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--dark);color:var(--cream);font-family:Georgia,serif}
+header{background:var(--brown);padding:25px 18px;text-align:center;border-bottom:2px solid var(--gold)}
+header h1{margin:0;color:var(--gold);font-size:25px}
+header p{margin:7px 0 0;color:var(--cream);font-size:13px}
+nav{display:flex;overflow-x:auto;background:#302117;padding:8px;gap:7px;position:sticky;top:0;z-index:5}
+nav button{flex:1;min-width:75px;background:transparent;color:var(--cream);border:1px solid #75583b;border-radius:8px;padding:10px 7px;font-size:12px}
+nav button.active{background:var(--gold);color:var(--dark);font-weight:bold}
+main{padding:16px;max-width:700px;margin:auto}
+h2{color:var(--gold);font-size:21px}
+h3{color:var(--gold);margin:5px 0 12px}
+.card{background:var(--brown);border:1px solid #72553a;border-radius:12px;padding:15px;margin:12px 0}
+.small{color:var(--muted);font-size:13px}
+.progress{height:9px;background:#594332;border-radius:10px;overflow:hidden;margin:10px 0}
+.progress div{height:100%;background:var(--gold);width:0}
+.task{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #604832}
+.task:last-child{border:0}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--gold)}
+.task label{flex:1}
+button,.action{cursor:pointer}
+.action{background:var(--gold);color:var(--dark);border:0;border-radius:8px;padding:10px 13px;font-weight:bold;margin:5px 3px 5px 0}
+.secondary{background:#594332;color:var(--cream)}
+input,textarea,select{background:#241912;color:var(--cream);border:1px solid #806344;border-radius:7px;padding:10px;max-width:100%}
+input[type=text],textarea{width:100%}
+.horse{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.horse button{white-space:nowrap}
+.hidden{display:none}
+.water{font-size:28px;color:var(--gold);letter-spacing:3px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+</style>
+</head>
+<body>
+<header>
+<h1>🤎 KINGSTON RANCH</h1>
+<p>MY LIFE • MY HORSES • MY RANCH</p>
+</header>
+<nav>
+<button class="active" onclick="show('home',this)">🏡 Vandaag</button>
+<button onclick="show('habits',this)">✨ Gewoontes</button>
+<button onclick="show('horses',this)">🐴 Paarden</button>
+<button onclick="show('week',this)">📅 Week</button>
+</nav>
+<main>
+<section id="home">
+<h2>Welkom op de ranch!</h2>
+<p class="small" id="today"></p>
+<div class="card">
+<h3>Dagelijkse vooruitgang</h3>
+<div class="progress"><div id="bar"></div></div>
+<strong id="percent">0% voltooid</strong>
+</div>
+<div class="card">
+<h3>💧 Water tracker</h3>
+<div class="water" id="water">○ ○ ○ ○ ○ ○ ○ ○</div>
+<p class="small">Doel: 8 glazen water per dag</p>
+<button class="action" onclick="addWater()">+ Glas water</button>
+<button class="action secondary" onclick="resetWater()">Reset</button>
+</div>
+<div class="card">
+<h3>⭐ Mijn dagelijkse taken</h3>
+<div id="daily"></div>
+</div>
+</section>
+<section id="habits" class="hidden">
+<h2>✨ Mijn gewoontes</h2>
+<p class="small">Vink je gewoontes af zodra je ze gedaan hebt.</p>
+<div class="card"><div id="habitsList"></div></div>
+<div class="card">
+<h3>Nieuwe gewoonte toevoegen</h3>
+<input id="newHabit" type="text" placeholder="Bijvoorbeeld: 20 minuten wandelen">
+<button class="action" onclick="addHabit()">Toevoegen</button>
+</div>
+</section>
+<section id="horses" class="hidden">
+<h2>🐴 Mijn paarden</h2>
+<p class="small">Een eigen verzorgingslijst voor elk paard.</p>
+<div id="horseList"></div>
+<div id="horseDetail" class="card hidden"></div>
+</section>
+<section id="week" class="hidden">
+<h2>📅 Wekelijkse ranch checklist</h2>
+<div class="card"><div id="weekly"></div></div>
+<div class="card">
+<h3>📝 Notities voor deze week</h3>
+<textarea id="notes" rows="5" placeholder="Wat moet er deze week gebeuren?"></textarea>
+</div>
+</section>
+<footer>🤎 Kingston Ranch Life Planner 🤎</footer>
+</main>
+<script>
+const dailyTasks=[
+"Opstaan om 7:00 uur",
+"Paarden buiten zetten",
+"Stallen uitmesten",
+"Paarden eten geven – ochtend",
+"Zelf ontbijten",
+"Voldoende water drinken",
+"Saloon onderhouden",
+"Ranch onderhouden",
+"Paarden eten geven – avond",
+"Zelf avondeten",
+"Douchen",
+"Paarden controleren voor de nacht"
+];
+const weeklyTasks=[
+"Voer- en voorraad controleren",
+"Watervoorzieningen grondig reinigen",
+"Omheiningen en weides controleren",
+"Zadelkamer opruimen",
+"Poetsmateriaal schoonmaken",
+"Saloon grondig poetsen",
+"Ranchterrein opruimen",
+"Paardenmateriaal controleren"
+];
+const horses=["Rebellion","Babette","Jumper","Kareltje","Binky","Alfie","Kleinpaardje","Yumyum","Bambam"];
+let habits=JSON.parse(localStorage.getItem("habits")||"null")||["Opstaan om 7 uur","Paarden buiten zetten","Stallen uitmesten","Twee keer per dag eten","Douchen","8 glazen water drinken","Saloon onderhouden","Ranch onderhouden"];
+let checks=JSON.parse(localStorage.getItem("checks")||"{}");
+let horseChecks=JSON.parse(localStorage.getItem("horseChecks")||"{}");
+let water=Number(localStorage.getItem("water")||0);
+let selectedHorse="";
+let day=new Date().toLocaleDateString("nl-BE");
+function save(){localStorage.setItem("checks",JSON.stringify(checks));localStorage.setItem("habits",JSON.stringify(habits));localStorage.setItem("horseChecks",JSON.stringify(horseChecks));localStorage.setItem("water",water);localStorage.setItem("notes",document.getElementById("notes").value)}
+function key(type,name){return day+"_"+type+"_"+name}
+function show(id,btn){
+document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+}
+function taskHTML(name,type){
+let k=key(type,name);
+return `<div class="task"><input type="checkbox" ${checks[k]?"checked":""} onchange="toggle('${type}',${JSON.stringify(name)},this.checked)"><label>${name}</label></div>`;
+}
+function toggle(type,name,value){checks[key(type,name)]=value;save();render()}
+function renderDaily(){
+document.getElementById("daily").innerHTML=dailyTasks.map(t=>taskHTML(t,"daily")).join("");
+}
+function renderHabits(){
+document.getElementById("habitsList").innerHTML=habits.map(t=>taskHTML(t,"habit")).join("");
+}
+function addHabit(){
+let input=document.getElementById("newHabit");
+if(!input.value.trim())return;
+habits.push(input.value.trim());input.value="";save();renderHabits();
+}
+function renderHorses(){
+document.getElementById("horseList").innerHTML=horses.map(h=>`<div class="card horse"><strong>🐴 ${h}</strong><button class="action" onclick="openHorse(${JSON.stringify(h)})">Verzorging</button></div>`).join("");
+}
+function openHorse(h){
+selectedHorse=h;
+let items=["Buiten zetten","Voeren","Water controleren","Poetsen","Hoeven controleren","Beweging / training","Avondcontrole"];
+document.getElementById("horseDetail").classList.remove("hidden");
+document.getElementById("horseDetail").innerHTML=`<h3>🐴 ${h}</h3><div>${items.map(t=>{let k=key(h,t);return `<div class="task"><input type="checkbox" ${horseChecks[k]?"checked":""} onchange="horseToggle('${h}','${t}',this.checked)"><label>${t}</label></div>`}).join("")}</div><button class="action secondary" onclick="document.getElementById('horseDetail').classList.add('hidden')">Sluiten</button>`;
+}
+function horseToggle(h,t,v){horseChecks[key(h,t)]=v;save()}
+function renderWeekly(){document.getElementById("weekly").innerHTML=weeklyTasks.map(t=>taskHTML(t,"weekly")).join("")}
+function addWater(){if(water<8)water++;localStorage.setItem("water",water);renderWater()}
+function resetWater(){water=0;localStorage.setItem("water",water);renderWater()}
+function renderWater(){document.getElementById("water").textContent=Array.from({length:8},(_,i)=>i<water?"●":"○").join(" "); }
+function renderProgress(){
+let all=[...dailyTasks.map(t=>key("daily",t)),...habits.map(t=>key("habit",t))];
+let done=all.filter(k=>checks[k]).length;
+let p=Math.round(done/all.length*100);
+document.getElementById("bar").style.width=p+"%";
+document.getElementById("percent").textContent=p+"% voltooid";
+}
+function render(){renderDaily();renderHabits();renderHorses();renderWeekly();renderWater();renderProgress()}
+document.getElementById("today").textContent=new Date().toLocaleDateString("nl-BE",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+document.getElementById("notes").value=localStorage.getItem("notes")||"";
+document.getElementById("notes").addEventListener("input",save);
+render();
+</script>
+</body>
+</html>
