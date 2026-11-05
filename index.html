@@ -163,6 +163,15 @@ let dailyDone=read("kr_daily",read("checks",{}));
 let habitDone=read("kr_habitdone",{});
 let weeklyDone=read("kr_weekly",{});
 let profiles=read("kr_profiles",{});
+// Oude paardenfiches verwijderen en Dusty en Lane leeg starten
+if(!localStorage.getItem("kr_horse_names_migrated")){
+  delete profiles["Jumper"];
+  delete profiles["Alfie"];
+  profiles["Dusty"]={};
+  profiles["Lane"]={};
+  localStorage.setItem("kr_horse_names_migrated","1");
+  write("kr_profiles",profiles);
+}  
 let events=read("kr_events",[]);
 let water=read("kr_water",{date:"",count:Number(localStorage.getItem("water")||0)});
 let weekNotes=localStorage.getItem("kr_notes")||localStorage.getItem("notes")||"";
